@@ -38,9 +38,16 @@ class UtilisateurController extends Controller
             'email' => 'required|email|unique:utilisateurs',
             'password' => 'required|string|min:8',
             'role' => 'required|string',
+            // 'id_direction' => 'integer',
+             //'id_note' => 'integer',
+            //  'entreprise' => 'integer',
+
         ]);
 
         Utilisateur::create([
+            'id_direction' => $request->id_direction,
+            'id_note' => $request->id_note,
+            'entreprise' => $request->entreprise,
             'nom' => $request->nom,
             'prenom' => $request->prenom,
             'email' => $request->email,
@@ -68,6 +75,9 @@ class UtilisateurController extends Controller
             'prenom' => 'required|string|max:255',
             'email' => 'required|email|unique:utilisateurs,email,' . $utilisateur->id,
             'role' => 'required|string',
+            'id_direction' => $request->id_direction,
+            'id_note' => $request->id_note,
+            'entreprise' => $request->entreprise,
         ]);
 
         $data = [
@@ -98,6 +108,7 @@ class UtilisateurController extends Controller
 
 
 
+
 public function login(Request $request)
 {
     $validated = $request->validate([
@@ -105,10 +116,7 @@ public function login(Request $request)
         'password' => 'required',
     ]);
 
-    // On charge les modules (qui contiennent la compagnie)
-    $utilisateur = Utilisateur::with(['modules.compagnie'])
-        ->where('email', $validated['email'])
-        ->first();
+    $utilisateur = Utilisateur::where('email', $validated['email'])->first();
 
     if (!$utilisateur || !Hash::check($validated['password'], $utilisateur->password)) {
         return response()->json(['message' => 'Identifiants invalides'], 401);
@@ -116,29 +124,12 @@ public function login(Request $request)
 
     $token = $utilisateur->createToken('token_utilisateur')->plainTextToken;
 
-    // Récupérer la première compagnie via les modules (ou null si aucun)
-    $compagnie = $utilisateur->modules->first()?->compagnie;
-
     return response()->json([
         'token' => $token,
-        'utilisateur' => [
-            'id' => $utilisateur->id,
-            'nom' => $utilisateur->nom,
-            'email' => $utilisateur->email,
-            'compagnie' => $compagnie ? [
-                'id' => $compagnie->id,
-                'nom' => $compagnie->nom,
-            ] : null,
-            'modules' => $utilisateur->modules->map(function ($module) {
-                return [
-                    'id' => $module->id,
-                    'nom' => $module->nom,
-                    // ajoute d’autres champs si nécessaire
-                ];
-            }),
-        ],
+        'utilisateur' => $utilisateur // 👈 renvoie tous les champs du modèle
     ]);
 }
+
 
 
 

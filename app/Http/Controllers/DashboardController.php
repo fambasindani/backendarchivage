@@ -10,24 +10,33 @@ class DashboardController extends Controller
    
 
 
-/*  public function getDeclarationSummary()
-{
-    $summary = DB::table('declarations')
-        ->join('classeurs', 'declarations.id_classeur', '=', 'classeurs.id')
-        ->groupBy('classeurs.nom_classeur')
-        ->orderByDesc(DB::raw('COUNT(declarations.id)'))
-        ->pluck(DB::raw('COUNT(declarations.id) as total'), 'classeurs.nom_classeur')
-        ->map(function ($total, $nom_classeur) {
-            return [
-                'nom_classeur' => $nom_classeur,
-                'total' => $total
-            ];
-        })
-        ->values();
 
-    return response()->json($summary);
+public function getNotePerceptionCountByCentre()
+{
+    $resultats = DB::table('note_perceptions')
+        ->join('centre_ordonnancements', 'note_perceptions.id_centre_ordonnancement', '=', 'centre_ordonnancements.id')
+        ->where('note_perceptions.statut', 1)
+        ->select(
+            'centre_ordonnancements.id as id_centre',
+            'centre_ordonnancements.nom as centre_ordonnancement',
+            DB::raw('COUNT(note_perceptions.id) as total')
+        )
+        ->groupBy('centre_ordonnancements.id', 'centre_ordonnancements.nom')
+        ->orderByDesc('total')
+        ->get();
+
+    return response()->json($resultats);
 }
-  */
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -75,7 +84,7 @@ public function getDeclarationSummary()
         $query = DB::table('declarations')
             ->join('classeurs', 'declarations.id_classeur', '=', 'classeurs.id')
             ->join('directions', 'declarations.id_direction', '=', 'directions.id')
-            ->select('classeurs.nom_classeur', DB::raw('COUNT(declarations.id) as total'))
+            ->select('classeurs.nom_classeur', "classeurs.id_classeur",  DB::raw('COUNT(declarations.id) as total'))
             ->groupBy('classeurs.nom_classeur');
 
         // 🔍 Filtrer par direction si fourni
@@ -108,6 +117,7 @@ public function getDeclarationSummary()
     $results = $query->select(
         'declarations.id',
         'classeurs.nom_classeur',
+        'classeurs.id as id_classeur',
         'directions.nom',
         'declarations.created_at'
     )->get();

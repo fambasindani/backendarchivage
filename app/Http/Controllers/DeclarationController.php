@@ -4,21 +4,90 @@
 
 
 namespace App\Http\Controllers;
-
 use App\Models\Declaration;
 use Illuminate\Http\Request;
 
 class DeclarationController extends Controller
 {
 
-
-
-
-
-  public function editdeclaration($id)
+public function editdeclaration($id)
     {
         return Declaration::with(['direction', 'emplacement'])->findOrFail($id);
     }
+
+
+public function getlistedocument($id)
+{
+    $declarations = Declaration::with(['direction', 'emplacement', 'classeur'])
+        ->where('statut', 1)
+        ->where('id_classeur', $id) // Ajout de la condition where pour filtrer par id
+        ->orderBy('id', 'desc')
+        ->paginate(20);
+
+    $declarations->getCollection()->transform(function ($item) {
+        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        return $item;
+    });
+
+
+
+
+    return response()->json($declarations);
+}
+
+public function searchDeclarationsfiltre(Request $request, $id)
+{
+    $search = $request->input('search');
+    $page = $request->input('page', 1); // par défaut page 1
+
+    $query = Declaration::with(['direction', 'emplacement', 'classeur'])
+        ->where('statut', 1)
+        ->where('id_classeur', $id)
+        ->where(function ($q) use ($search) {
+            $q->where('intitule', 'like', "%$search%")
+              ->orWhere('num_reference', 'like', "%$search%")
+              ->orWhere('mot_cle', 'like', "%$search%")
+              ->orWhere('num_declaration', 'like', "%$search%");
+        });
+
+    $declarations = $query->orderBy('id', 'desc')->paginate(20, ['*'], 'page', $page);
+
+    $declarations->getCollection()->transform(function ($item) {
+        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        return $item;
+    });
+
+    return response()->json($declarations);
+}
+
+
+public function listedocumentdirectionall(Request $request, $id)
+{
+    //$id = $request->input('id_classeur');
+    $id_direction = $request->input('id_direction');
+
+    $declarations = Declaration::with(['direction', 'emplacement', 'classeur'])
+        ->where('statut', 1)
+        ->where('id_classeur', $id)
+        ->where('id_direction', $id_direction)
+        ->orderBy('id', 'desc')
+        ->paginate(20);
+
+    $declarations->getCollection()->transform(function ($item) {
+        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        return $item;
+    });
+
+    return response()->json($declarations);
+}
+
+
+
+
+
 
 
 public function getDeclarations()

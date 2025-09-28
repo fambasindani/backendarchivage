@@ -18,6 +18,9 @@ class Utilisateur extends Authenticatable
         'password',
         'role',
         'statut', // champ pour la suppression logique
+        'id_direction',
+        'id_note',
+        'entreprise'
     ];
 
     protected $hidden = [
@@ -26,12 +29,12 @@ class Utilisateur extends Authenticatable
 
     public function compagnie()
     {
-        return $this->belongsTo(Compagnie::class, 'id_compagnie');
+        return $this->belongsTo(Direction::class, 'id_direction');
     }
 
    public function modules()
 {
-    return $this->hasMany(Module::class, 'id_utilisateur');
-}
+    return $this->belongsTo(CentreOrdonnancement::class, 'id_centre');
+} 
 
 }

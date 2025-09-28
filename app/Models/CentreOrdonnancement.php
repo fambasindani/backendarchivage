@@ -13,8 +13,14 @@ class CentreOrdonnancement extends Model
     protected $fillable = [
         
         'nom', // Nouveau champ
+        'id_ministere',
         'description',
         'statut',
         
     ];
+
+      public function articleBudgetaire()
+    {
+        return $this->belongsTo(ArticleBudgetaire::class, 'id_ministere');
+    }
 }

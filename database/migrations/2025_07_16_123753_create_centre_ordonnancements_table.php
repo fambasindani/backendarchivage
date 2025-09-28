@@ -15,6 +15,7 @@ class CreateCentreOrdonnancementsTable extends Migration
     {
         Schema::create('centre_ordonnancements', function (Blueprint $table) {
             $table->id();
+            $table->integer('id_ministere');
             $table->string('nom');
              $table->string('description');
             $table->string('statut')->nullable();

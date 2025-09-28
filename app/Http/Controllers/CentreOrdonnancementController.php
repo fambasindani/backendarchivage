@@ -14,7 +14,18 @@ public function getAll()
 {
     // Récupérer tous les enregistrements où statut = 1
     // Les plus récents (insertions) apparaissent en premier grâce au tri par ID décroissant
-    return CentreOrdonnancement::where('statut', 1)
+    return CentreOrdonnancement::with('articleBudgetaire')
+                                 -> where('statut', 1)
+                                ->orderBy('id', 'desc') // tri décroissant
+                                ->paginate(10);
+}
+
+
+public function getcentre()
+{
+    // Récupérer tous les enregistrements où statut = 1
+    // Les plus récents (insertions) apparaissent en premier grâce au tri par ID décroissant
+    return CentreOrdonnancement:: where('statut', 1)
                                 ->orderBy('id', 'desc') // tri décroissant
                                 ->paginate(10);
 }
@@ -23,7 +34,8 @@ public function getAll()
 public function searchcentre(Request $request)
 {
     // Recherche avec statut = 1
-    $query = CentreOrdonnancement::where('statut', 1);
+    $query = CentreOrdonnancement::with('articleBudgetaire')
+    ->where('statut', 1);
 
     if ($request->has('search')) {
         $query->where('nom', 'like', '%' . $request->search . '%');
@@ -34,19 +46,23 @@ public function searchcentre(Request $request)
 
 
 
-
 public function addcentre(Request $request)
 {
     $request->validate([
-        'nom' => 'required|string|max:255|unique:centre_ordonnancements', // Ajout de la validation unique
+        'nom' => 'required|string|max:255|unique:centre_ordonnancements', // Validation unique
         'description' => 'required|string|max:255',
-        
+        'id_ministere' => 'required|integer', // Validation requise
+    ], [
+        'id_ministere.required' => 'Veuillez sélectionner le champ nom du ministère.',
+        'id_ministere.integer' => 'Veuillez sélectionner le champ nom du ministère.',
     ]);
 
+    // Créer un nouvel enregistrement dans la table
     CentreOrdonnancement::create([
         'nom' => $request->nom,
         'description' => $request->description,
         'statut' => "1",
+        'id_ministere' => $request->id_ministere, // Ajout du champ id_ministere
     ]);
 
     return response()->json(['message' => 'Centre ordonnancement ajouté avec succès']);
@@ -64,13 +80,18 @@ public function updateCentre(Request $request, $id)
 
     // ✅ Validation des données
     $request->validate([
-        'nom' => 'required|string|max:255|unique:centre_ordonnancements,nom,' . $centre->id,
+        'nom' => 'required|string|max:255', // Validation unique
         'description' => 'required|string|max:255',
+        'id_ministere' => 'required|integer', // Validation requise
+    ], [
+        'id_ministere.required' => 'Veuillez sélectionner le champ nom du ministère.',
+        'id_ministere.integer' => 'Veuillez sélectionner le champ nom du ministère.',
     ]);
 
     // 🛠 Mise à jour des champs spécifiques
     $centre->nom = $request->nom;
     $centre->description = $request->description;
+    $centre->id_ministere = $request->id_ministere;
     $centre->save();
 
     // 📦 Réponse JSON

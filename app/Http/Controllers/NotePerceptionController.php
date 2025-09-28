@@ -15,6 +15,22 @@ class NotePerceptionController extends Controller
                              ->paginate(10);
     }
 
+public function getNote_centre($id)
+{
+    return NotePerception::with([
+        'classeur',
+        'centre',
+        'assujetti',
+        'emplacement',
+        'utilisateur',
+        'articlebudgetaire'
+    ])
+    ->where('statut', 1)
+    ->where('id_centre_ordonnancement', $id)
+    ->paginate(10);
+}
+
+
     // 🔍 Recherche sur les relations (nom_classeur, nom_centre, nom_emplacement, nom_assujetti)
     public function searchnote(Request $request)
     {
@@ -24,17 +40,53 @@ class NotePerceptionController extends Controller
             ->where('statut', 1)
             ->where(function ($query) use ($search) {
                 $query->whereHas('classeur', function ($q) use ($search) {
-                    $q->where('nom', 'like', "%{$search}%");
+                    $q->where('nom_classeur', 'like', "%{$search}%");
                 })->orWhereHas('centre', function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%");
                 })->orWhereHas('emplacement', function ($q) use ($search) {
-                    $q->where('nom', 'like', "%{$search}%");
+                    $q->where('nom_emplacement', 'like', "%{$search}%");
                 })->orWhereHas('assujetti', function ($q) use ($search) {
                     $q->where('nom_raison_sociale', 'like', "%{$search}%");
                 });
             })
             ->paginate(10);
     }
+
+
+
+
+public function searchnote_idcentre(Request $request, $id)
+{
+    $search = $request->input('search');
+
+    return NotePerception::with([
+        'classeur',
+        'centre',
+        'assujetti',
+        'emplacement',
+        'utilisateur',
+        'articlebudgetaire'
+    ])
+    ->where('statut', 1)
+    ->where('id_centre_ordonnancement', $id) // ✅ correction ici
+    ->where(function ($query) use ($search) {
+        $query->whereHas('classeur', function ($q) use ($search) {
+            $q->where('nom_classeur', 'like', "%{$search}%");
+        })->orWhereHas('centre', function ($q) use ($search) {
+            $q->where('nom', 'like', "%{$search}%"); // ✅ correction ici
+        })->orWhereHas('emplacement', function ($q) use ($search) {
+            $q->where('nom_emplacement', 'like', "%{$search}%");
+        })->orWhereHas('assujetti', function ($q) use ($search) {
+            $q->where('nom_raison_sociale', 'like', "%{$search}%");
+        });
+    })
+    ->paginate(10);
+}
+
+
+
+
+
 
     // ➕ Création d’une note
     public function createnote(Request $request)

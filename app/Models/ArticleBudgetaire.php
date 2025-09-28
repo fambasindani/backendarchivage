@@ -15,5 +15,7 @@ class ArticleBudgetaire extends Model
         'statut', // Assurez-vous d'inclure 'statut' si vous le modifiez via le formulaire
     ];
 
+ 
+
 
 }

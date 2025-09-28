@@ -25,6 +25,7 @@ use App\Http\Controllers\DashboardController;
 
 
 
+
 //php artisan make:model DocumentDeclaration -mcr
 
 
@@ -71,6 +72,13 @@ Route::delete('/modules/{id}', [ModuleController::class, 'destroy']);
 Route::get('/declaration-dashboard', [DashboardController::class, 'getDeclarationSummary']);
 Route::post('/declaration-search', [DashboardController::class, 'Searchdeclaration']);
 
+//Dashboadr Note de perception
+
+Route::get('/note-perception-dashboard', [DashboardController::class, 'getNotePerceptionCountByCentre']);
+
+
+
+
 
 Route::post('/login', [UtilisateurController::class, 'login'])->name('login');
 
@@ -106,6 +114,15 @@ Route::post('/declarations', [DeclarationController::class, 'createdeclaration']
 Route::put('/declarations/{id}', [DeclarationController::class, 'updatedeclaration']);
 Route::delete('/declarations/{id}', [DeclarationController::class, 'destroy']);
 Route::get('/editdeclaration/{id}', [DeclarationController::class, 'editdeclaration']);
+Route::get('/listedeclaration/{id}', [DeclarationController::class, 'getlistedocument']);
+Route::post('/listedeclaration/{id}', [DeclarationController::class, 'listedocumentdirectionall']);
+Route::post('/searchDeclarationsfiltres/{id}', [DeclarationController::class, 'searchDeclarationsfiltre']);
+
+
+
+
+
+
 
 
 //controller pour document_noteperception
@@ -127,6 +144,7 @@ Route::post('centre_ordonnancements', [CentreOrdonnancementController::class, 'a
 Route::get('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'editcentre']);
 Route::put('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'updatecentre']);
 Route::delete('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'supprimercentre']);
+Route::get('centre', [CentreOrdonnancementController::class, 'getcentre']);
 
 
 
@@ -191,17 +209,20 @@ Route::delete('/assujettis/{id}', [AssujettiController::class, 'supprimerassujet
 //controller pour les notes
 
 Route::get('/notes', [NotePerceptionController::class, 'getNote']);
-Route::get('/notes/search', [NotePerceptionController::class, 'searchnote']);
+Route::post('/notes/search', [NotePerceptionController::class, 'searchnote']);
 Route::post('/notes', [NotePerceptionController::class, 'createnote']);
 Route::get('/notes/{id}', [NotePerceptionController::class, 'editnote']);
 Route::put('/notes/{id}', [NotePerceptionController::class, 'note']); // mise à jour
 Route::delete('/notes/{id}', [NotePerceptionController::class, 'deletenote']);
+Route::get('/noteid-searchnote/{id}', [NotePerceptionController::class, 'searchnote_idcentre']);
+Route::get('/note-centre/{id}', [NotePerceptionController::class, 'getNote_centre']);
 
 
 
 
 //article budgetaire
 Route::get('/article', [ArticleBudgetaireController::class, 'getArticle']); // Liste paginée
+Route::get('/articleall', [ArticleBudgetaireController::class, 'getArticleAll']); // Liste paginée
 Route::post('/search-article', [ArticleBudgetaireController::class, 'searchArticle']); // Recherche
 Route::post('/create-article', [ArticleBudgetaireController::class, 'creerArticle']); // Création
 Route::get('/edit-article/{id}', [ArticleBudgetaireController::class, 'editArticle']); // Lecture d’un article
