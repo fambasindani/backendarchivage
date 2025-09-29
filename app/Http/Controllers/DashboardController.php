@@ -10,18 +10,37 @@ class DashboardController extends Controller
    
 
 
-
 public function getNotePerceptionCountByCentre()
 {
     $resultats = DB::table('note_perceptions')
         ->join('centre_ordonnancements', 'note_perceptions.id_centre_ordonnancement', '=', 'centre_ordonnancements.id')
-        ->where('note_perceptions.statut', 1)
+        ->where('note_perceptions.statut', 1) // Condition ajoutée
         ->select(
             'centre_ordonnancements.id as id_centre',
             'centre_ordonnancements.nom as centre_ordonnancement',
             DB::raw('COUNT(note_perceptions.id) as total')
         )
         ->groupBy('centre_ordonnancements.id', 'centre_ordonnancements.nom')
+        ->orderByDesc('total')
+        ->get();
+
+    return response()->json($resultats);
+}
+
+
+public function getNotePerceptionCountByCentre_id($id)
+{
+    $resultats = DB::table('note_perceptions')
+        ->join('centre_ordonnancements', 'note_perceptions.id_centre_ordonnancement', '=', 'centre_ordonnancements.id')
+        ->where('note_perceptions.statut', 1) // Condition ajoutée
+        ->where('note_perceptions.id_ministere', $id) // Ajout de la condition pour le filtre
+        ->select(
+            'centre_ordonnancements.id as id_centre',
+            'centre_ordonnancements.nom as centre_ordonnancement',
+            'note_perceptions.id_ministere', // Inclusion de id_ministere dans la sélection
+            DB::raw('COUNT(note_perceptions.id) as total')
+        )
+        ->groupBy('centre_ordonnancements.id', 'centre_ordonnancements.nom', 'note_perceptions.id_ministere') // Ajout de id_ministere dans le groupement
         ->orderByDesc('total')
         ->get();
 

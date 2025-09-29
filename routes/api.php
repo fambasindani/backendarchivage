@@ -73,8 +73,12 @@ Route::get('/declaration-dashboard', [DashboardController::class, 'getDeclaratio
 Route::post('/declaration-search', [DashboardController::class, 'Searchdeclaration']);
 
 //Dashboadr Note de perception
-
 Route::get('/note-perception-dashboard', [DashboardController::class, 'getNotePerceptionCountByCentre']);
+Route::get('/note-perception-dashboard/{id}', [DashboardController::class, 'getNotePerceptionCountByCentre_id']);
+
+
+
+
 
 
 
@@ -216,6 +220,7 @@ Route::put('/notes/{id}', [NotePerceptionController::class, 'note']); // mise à
 Route::delete('/notes/{id}', [NotePerceptionController::class, 'deletenote']);
 Route::get('/noteid-searchnote/{id}', [NotePerceptionController::class, 'searchnote_idcentre']);
 Route::get('/note-centre/{id}', [NotePerceptionController::class, 'getNote_centre']);
+Route::post('/search-note/{id}', [NotePerceptionController::class, 'searchnote_id']);
 
 
 

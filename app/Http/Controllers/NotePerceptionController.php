@@ -55,6 +55,30 @@ public function getNote_centre($id)
 
 
 
+  public function searchnote_id(Request $request, $id)
+{
+    $search = $request->input('search');
+
+    return NotePerception::with(['classeur', 'centre', 'assujetti', 'emplacement', 'utilisateur', 'ArticleBudgetaire'])
+        ->where('statut', 1)
+        ->where('id_centre_ordonnancement', $id) // Ajout de la condition pour filtrer par id_ministere
+        ->where(function ($query) use ($search) {
+            $query->whereHas('classeur', function ($q) use ($search) {
+                $q->where('nom_classeur', 'like', "%{$search}%");
+            })->orWhereHas('centre', function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%");
+            })->orWhereHas('emplacement', function ($q) use ($search) {
+                $q->where('nom_emplacement', 'like', "%{$search}%");
+            })->orWhereHas('assujetti', function ($q) use ($search) {
+                $q->where('nom_raison_sociale', 'like', "%{$search}%");
+            });
+        })
+        ->paginate(10);
+}
+
+
+
+
 public function searchnote_idcentre(Request $request, $id)
 {
     $search = $request->input('search');
