@@ -22,9 +22,9 @@ class Declaration extends Model
         'statut',
     ];
 
-     public function direction()
+     public function departement()
     {
-        return $this->belongsTo(Direction::class, 'id_direction');
+        return $this->belongsTo(Departement::class, 'id_direction');
     }
 
     public function emplacement()
@@ -41,6 +41,12 @@ class Declaration extends Model
 
     public function utilisateur()
     {
-        return $this->belongsTo(User::class, 'id_user');
+        return $this->belongsTo(Utilisateur::class, 'id_user');
+    }
+
+
+        public function direction()
+    {
+        return $this->belongsTo(Direction::class, 'id_direction');
     }
 }

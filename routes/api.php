@@ -15,13 +15,71 @@ use App\Http\Controllers\UtilisateurController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ArticleBudgetaireController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\MonUserController;
+use App\Http\Controllers\MonUtilisateurController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\DepartementController;
+
+use App\Http\Controllers\DashboardNoteController;
+use App\Http\Controllers\ScanController;
+
+
+
+
+    Route::prefix('dashboards/notes')->group(function () {
+    // Statistiques
+    Route::get('/statistics', [DashboardNoteController::class, 'statistics']);
+    // Listes pour filtres
+    Route::get('/articles', [DashboardNoteController::class, 'getArticles']);
+    Route::get('/assujettis', [DashboardNoteController::class, 'getAssujettis']);
+    Route::get('/classeurs', [DashboardNoteController::class, 'getClasseurs']);
+    // Centres
+    Route::get('/centres', [DashboardNoteController::class, 'centres']);
+    Route::get('/centres/{id}/notes', [DashboardNoteController::class, 'notesByCentre']);
+    Route::get('/centres/{id}/stats', [DashboardNoteController::class, 'centreStats']);
+    // Articles
+    Route::get('/articles/{id}/stats', [DashboardNoteController::class, 'articleStats']);
+    // Recherche et activités
+    Route::get('/recent', [DashboardNoteController::class, 'recentActivities']);
+    Route::post('/search', [DashboardNoteController::class, 'advancedSearch']);
+});
 
 
 
 
 
+// Routes pour le scanner (sans base de données)
+Route::prefix('scans')->group(function () {
+    // Upload simple
+    Route::post('/upload', [ScanController::class, 'upload']);
+    
+    // Upload multiple
+    Route::post('/upload-multiple', [ScanController::class, 'uploadMultiple']);
+    
+    // Lister tous les scans
+    Route::get('/list', [ScanController::class, 'listScans']);
+    
+    // Rechercher des scans
+    Route::get('/search', [ScanController::class, 'search']);
+    
+    // Télécharger
+    Route::get('/download/{filename}', [ScanController::class, 'download']);
+    
+    // Supprimer
+    Route::delete('/delete/{filename}', [ScanController::class, 'delete']);
+    
+    // Nettoyer les anciens fichiers
+    Route::post('/cleanup', [ScanController::class, 'cleanup']);
+    
+    // Santé de l'API
+    Route::get('/health', [ScanController::class, 'health']);
+});
 
-
+// Routes compatibles avec votre code C#
+Route::post('/upload-scan', [ScanController::class, 'upload']);
+Route::get('/scans', [ScanController::class, 'listScans']);
 
 
 
@@ -39,6 +97,147 @@ use App\Http\Controllers\DashboardController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+
+Route::post('/connexion', [MonUtilisateurController::class, 'login']);
+
+   
+    // ============ MON UTILISATEURS ============
+    Route::prefix('mon-utilisateurs')->group(function () {
+        // CRUD de base
+        Route::get('/', [MonUtilisateurController::class, 'index']);
+        Route::post('/', [MonUtilisateurController::class, 'store']);
+        Route::get('/{id}', [MonUtilisateurController::class, 'show']);
+        Route::put('/{id}', [MonUtilisateurController::class, 'update']);
+        Route::delete('/{id}', [MonUtilisateurController::class, 'destroy']);
+        
+        // Statistiques
+        Route::get('/stats/general', [MonUtilisateurController::class, 'stats']);
+        Route::get('/stats/recent', [MonUtilisateurController::class, 'recentUsers']);
+        Route::get('/{id}/with-details', [MonUtilisateurController::class, 'getWithDetails']);
+        
+        // Gestion des rôles
+        Route::post('/{id}/assign-roles', [MonUtilisateurController::class, 'assignRoles']);
+        Route::post('/{id}/remove-role/{roleId}', [MonUtilisateurController::class, 'removeRole']);
+        
+        // Gestion des départements
+        Route::post('/{id}/assign-directions', [MonUtilisateurController::class, 'assignDirections']);
+        Route::post('/{id}/remove-direction/{departementId}', [MonUtilisateurController::class, 'removeDirection']);
+    });
+
+
+
+
+
+
+// CORRIGEZ L'ORDRE DES ROUTES
+Route::prefix('roles')->group(function () {
+    // Routes SANS paramètre
+    Route::get('/', [RoleController::class, 'index']);
+    Route::post('/', [RoleController::class, 'store']);
+    Route::get('/stats', [RoleController::class, 'stats']); // Placez AVANT les routes avec {id}
+    
+    // Routes SPÉCIFIQUES avec {id} (doivent être AVANT les routes génériques)
+    Route::get('/{id}/with-details', [RoleController::class, 'showWithDetails']);
+    Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissions']);
+    Route::post('/{id}/remove-permission/{permissionId}', [RoleController::class, 'removePermission']);
+    
+    // Routes GÉNÉRIQUES avec {id} (doivent être APRÈS)
+    Route::get('/{id}', [RoleController::class, 'show']);
+    Route::put('/{id}', [RoleController::class, 'update']);
+    Route::delete('/{id}', [RoleController::class, 'destroy']);
+});
+
+
+     // ============ PERMISSIONS ============
+    Route::prefix('permissions')->group(function () {
+        // CRUD de base
+        Route::get('/', [PermissionController::class, 'index']);
+        Route::post('/', [PermissionController::class, 'store']);
+        Route::get('/{id}', [PermissionController::class, 'show']);
+        Route::put('/{id}', [PermissionController::class, 'update']);
+        Route::delete('/{id}', [PermissionController::class, 'destroy']);
+        
+        // Vérification d'utilisation
+        Route::get('/{id}/used-by', [PermissionController::class, 'getUsedByRoles']);
+    });
+
+
+
+     // ============ DÉPARTEMENTS ============
+    Route::prefix('departements')->group(function () {
+        // CRUD de base
+        Route::get('/', [DepartementController::class, 'index']);
+        Route::post('/', [DepartementController::class, 'store']);
+        Route::get('/{id}', [DepartementController::class, 'show']);
+        Route::put('/{id}', [DepartementController::class, 'update']);
+        Route::delete('/{id}', [DepartementController::class, 'destroy']);
+        
+        // Statistiques
+       // Route::get('/statdepartementd', [DepartementController::class, 'statdepartement']);
+        Route::get('/{id}/with-details', [DepartementController::class, 'getWithDetails']);
+        Route::get('/{id}/available-users', [DepartementController::class, 'getAvailableUsers']);
+        Route::get('/stats/departement', [DepartementController::class, 'statdepartement']);
+
+        
+        // Gestion des utilisateurs
+        Route::post('/{id}/assign-user/{userId}', [DepartementController::class, 'assignUser']);
+        Route::post('/{id}/remove-user/{userId}', [DepartementController::class, 'removeUser']);
+    });
+
+
+Route::middleware('auth:sanctum')->group(function () {
+   Route::prefix('dashboard')->group(function () {
+        Route::get('/statistique', [MonUtilisateurController::class, 'dashboardStats']);
+        Route::get('/recent-users', [MonUtilisateurController::class, 'recentUsers']);   
+        Route::get('/statistics', [DashboardController::class, 'statistics']);
+        Route::get('/classifiers', [DashboardController::class, 'classifiers']);
+        Route::get('/classifiers/direction/{id}', [DashboardController::class, 'classifiersByDirection']);
+        Route::get('/recent', [DashboardController::class, 'recentActivities']);
+        Route::get('/direction/{id}', [DashboardController::class, 'directionStats']);
+        Route::post('/search', [DashboardController::class, 'advancedSearch']);
+    });
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::prefix('profil')->group(function () {
+    Route::get('/mon-profil', [ProfilController::class, 'monProfil']);
+    Route::get('/utilisateurs/{id}', [ProfilController::class, 'show']);
+    Route::put('/modifier/{id}', [ProfilController::class, 'modifierProfil']);
+    Route::get('/afficher/{id}', [ProfilController::class, 'afficherProfil']);
+    Route::get('/avatar/{filename}', [ProfilController::class, 'getAvatar']); // ✅
+});
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -121,6 +320,7 @@ Route::get('/editdeclaration/{id}', [DeclarationController::class, 'editdeclarat
 Route::get('/listedeclaration/{id}', [DeclarationController::class, 'getlistedocument']);
 Route::post('/listedeclaration/{id}', [DeclarationController::class, 'listedocumentdirectionall']);
 Route::post('/searchDeclarationsfiltres/{id}', [DeclarationController::class, 'searchDeclarationsfiltre']);
+Route::get('/details/{id}', [DeclarationController::class, 'editdeclaration']);
 
 
 
@@ -130,10 +330,11 @@ Route::post('/searchDeclarationsfiltres/{id}', [DeclarationController::class, 's
 
 
 //controller pour document_noteperception
-Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
+
 Route::get('/notes/downloads/{id}', [DocumentNotePerceptionController::class, 'download']);
 Route::get('/notes/download/{id}', [DocumentNotePerceptionController::class, 'getallpdf']);
 Route::delete('/notes/delete/{id}', [DocumentNotePerceptionController::class, 'deleteDocument']);
+Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMultiple']);
 
 
 
@@ -185,7 +386,17 @@ Route::get('/emplacement', [EmplacementController::class, 'getAllemplacement']);
 Route::get('/directions', [DirectionController::class, 'Getdirection']);
 Route::post('/directions/search', [DirectionController::class, 'searchdirection']);
 Route::get('/directions/{id}', [DirectionController::class, 'editdirection']);
-Route::post('/directions', [DirectionController::class, 'createdirection']);
+
+
+
+// routes/api.php
+
+Route::middleware('auth:sanctum')->group(function () {
+    
+    Route::post('/directions', [DirectionController::class, 'createdirection'])
+        ->middleware('permission:creer_direction'); // ← Ceci est CRUCIAL
+});
+
 Route::put('/directions/{id}', [DirectionController::class, 'updatedirection']);
 Route::delete('/directions/{id}', [DirectionController::class, 'deletedirection']);
 Route::get('/direction', [DirectionController::class, 'getAlldirection']);
@@ -234,3 +445,28 @@ Route::get('/edit-article/{id}', [ArticleBudgetaireController::class, 'editArtic
 Route::put('/update-article/{id}', [ArticleBudgetaireController::class, 'updateArticle']); // Mise à jour
 Route::delete('delete-article/{id}', [ArticleBudgetaireController::class, 'deleteArticle']); // Désactivation
 
+
+
+
+
+
+
+
+//Authentification
+
+
+
+
+
+
+
+// CRUD users
+Route::apiResource('users', MonUserController::class);
+
+// Assignation relations
+Route::post('users/{id}/roles', [MonUserController::class,'assignRoles']);
+Route::post('users/{id}/droits', [MonUserController::class,'assignDroits']);
+Route::post('users/{id}/groupes', [MonUserController::class,'assignGroupes']);
+
+// Droits finaux
+Route::get('users/{id}/droits-finaux', [MonUserController::class,'droitsFinaux']);

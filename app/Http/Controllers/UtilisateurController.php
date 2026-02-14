@@ -71,19 +71,21 @@ class UtilisateurController extends Controller
         $utilisateur = Utilisateur::findOrFail($id);
 
         $request->validate([
-            'nom' => 'required|string|max:255',
+           'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
-            'email' => 'required|email|unique:utilisateurs,email,' . $utilisateur->id,
+          //  'email' => 'required|email|unique:utilisateurs',
+           // 'password' => 'required|string|min:8',
             'role' => 'required|string',
-            'id_direction' => $request->id_direction,
-            'id_note' => $request->id_note,
-            'entreprise' => $request->entreprise,
         ]);
 
         $data = [
+            'id_direction' => $request->id_direction,
+            'id_note' => $request->id_note,
+            'entreprise' => $request->entreprise,
             'nom' => $request->nom,
             'prenom' => $request->prenom,
-            'email' => $request->email,
+           // 'email' => $request->email,
+           // 'password' => Hash::make($request->password),
             'role' => $request->role,
         ];
 

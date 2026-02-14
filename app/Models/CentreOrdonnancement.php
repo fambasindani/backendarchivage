@@ -23,4 +23,9 @@ class CentreOrdonnancement extends Model
     {
         return $this->belongsTo(ArticleBudgetaire::class, 'id_ministere');
     }
+
+      public function notes()
+    {
+        return $this->hasMany(NotePerception::class, 'id_centre_ordonnancement');
+    }
 }

@@ -13,7 +13,7 @@ class DirectionController extends Controller
 public function getAlldirection()
 {
     return Direction::where('statut', 1)
-                    ->orderBy('id', 'desc')
+                   ->orderBy('id', 'desc')
                     ->get(); // renvoie un tableau brut
 }
 
@@ -22,8 +22,8 @@ public function getAlldirection()
    public function Getdirection()
 {
     // 🔄 Récupération paginée des directions actives triées par ID décroissant
-    return Direction::where('statut', 1)
-                    ->orderBy('id', 'desc') // Tri par ordre d'insertion (les plus récentes d'abord)
+    return Direction::
+                    orderBy('id', 'desc') // Tri par ordre d'insertion (les plus récentes d'abord)
                     ->paginate(10);
 }
 

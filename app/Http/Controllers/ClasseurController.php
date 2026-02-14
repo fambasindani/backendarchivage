@@ -18,8 +18,8 @@ public function getAllclasseur()
 public function getAll()
 {
     // Récupérer tous les classeurs avec statut = 1 triés par ID décroissant
-    return Classeur::where('statut', 1)
-                   ->orderBy('id', 'desc') // les plus récents en premier
+    return Classeur::
+                   orderBy('id', 'desc') // les plus récents en premier
                    ->paginate(10);
 }
 

@@ -39,12 +39,11 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
-       'api' => [
-               // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-               'throttle:api',
-               \Illuminate\Routing\Middleware\SubstituteBindings::class,
-],
-
+        'api' => [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // ✅ IMPORTANT pour l'authentification par token
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
     ];
 
     /**
@@ -55,14 +54,32 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $routeMiddleware = [
+        // Middleware d'authentification
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        
+        // Middleware de cache
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        
+        // Middleware d'autorisation
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
+        
+        // Middleware de redirection
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        
+        // Middleware de confirmation de mot de passe
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+        
+        // Middleware de signature
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+        
+        // Middleware de limitation de requêtes
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        
+        // Middleware de vérification d'email
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        
+        // ✅ VOTRE MIDDLEWARE DE PERMISSION PERSONNALISÉ
+        'permission' => \App\Http\Middleware\CheckPermission::class,
     ];
 }

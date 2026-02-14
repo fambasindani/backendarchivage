@@ -73,9 +73,21 @@ public function deleteDocument($id)
         ], 201);
     }
 
-    // 📥 Téléchargement du fichier PDF
-  
 
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    // 📥 Téléchargement du fichier PDF
     public function download($id)
 {
     $document = DocumentDeclaration::findOrFail($id);
