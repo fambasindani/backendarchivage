@@ -186,7 +186,7 @@ Route::prefix('roles')->group(function () {
     });
 
 
-Route::middleware('auth:sanctum')->group(function () {
+//Route::middleware('auth:sanctum')->group(function () {
    Route::prefix('dashboard')->group(function () {
         Route::get('/statistique', [MonUtilisateurController::class, 'dashboardStats']);
         Route::get('/recent-users', [MonUtilisateurController::class, 'recentUsers']);   
@@ -198,7 +198,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/search', [DashboardController::class, 'advancedSearch']);
     });
 
-});
+//});
 
 
 
@@ -343,39 +343,43 @@ Route::post('/notes/upload', [DocumentNotePerceptionController::class, 'uploadMu
 
 
 //controller pour centre ordonnancement
+Route::middleware('auth:sanctum')->group(function () {
 Route::get('centre_ordonnancements/all', [CentreOrdonnancementController::class, 'getAll']);
 Route::post('centre_ordonnancements/search', [CentreOrdonnancementController::class, 'searchcentre']);
-Route::post('centre_ordonnancements', [CentreOrdonnancementController::class, 'addcentre']);
+Route::post('centre_ordonnancements', [CentreOrdonnancementController::class, 'addcentre'])->middleware('permission:creer_centre');
 Route::get('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'editcentre']);
-Route::put('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'updatecentre']);
-Route::delete('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'supprimercentre']);
+Route::put('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'updatecentre'])->middleware('permission:modifier_centre');
+Route::delete('centre_ordonnancements/{id}', [CentreOrdonnancementController::class, 'supprimercentre'])->middleware('permission:supprimer_centre'); 
 Route::get('centre', [CentreOrdonnancementController::class, 'getcentre']);
-
+});
 
 
 
 
 
 //controller pour Classeur
+
+Route::middleware('auth:sanctum')->group(function () {
 Route::get('/classeurs', [ClasseurController::class, 'getAll']); // Récupérer tous les classeurs
 Route::get('/classeurs/search', [ClasseurController::class, 'searchClasseur']); // Rechercher des classeurs
-Route::post('/classeurs', [ClasseurController::class, 'addClasseur']); // Ajouter un nouveau classeur
-Route::get('/classeurs/{id}', [ClasseurController::class, 'editClasseur']); // Éditer un classeur existant
-Route::put('/classeurs/{id}', [ClasseurController::class, 'updateClasseur']); // Mettre à jour un classeur
-Route::delete('/classeurs/{id}', [ClasseurController::class, 'supprimerClasseur']); // Supprimer un classeur (mettre à jour le statut)
+Route::post('/classeurs', [ClasseurController::class, 'addClasseur']) ->middleware('permission:creer_classeur');  
+Route::get('/classeurs/{id}', [ClasseurController::class, 'editClasseur']) ;
+Route::put('/classeurs/{id}', [ClasseurController::class, 'updateClasseur'])->middleware('permission:modifier_classeur');
+Route::delete('/classeurs/{id}', [ClasseurController::class, 'supprimerClasseur'])->middleware('permission:supprimer_classeur');// Supprimer un classeur (mettre à jour le statut)
 Route::get('/classeur', [ClasseurController::class, 'getAllclasseur']);
+});
 
 
-
-
-//controller pour Emplacement
+//controller pour Emplacement  creer_emplacement
+Route::middleware('auth:sanctum')->group(function () {
 Route::get('/emplacements', [EmplacementController::class, 'getAll']);
 Route::get('/emplacements/search', [EmplacementController::class, 'searchEmplacement']);
-Route::post('/emplacements', [EmplacementController::class, 'addEmplacement']);
+Route::post('/emplacements', [EmplacementController::class, 'addEmplacement'])->middleware('permission:creer_emplacement');
 Route::get('/emplacements/{id}', [EmplacementController::class, 'editEmplacement']);
-Route::put('/emplacements/{id}', [EmplacementController::class, 'updateEmplacement']);
-Route::delete('/emplacements/{id}', [EmplacementController::class, 'supprimerEmplacement']);
+Route::put('/emplacements/{id}', [EmplacementController::class, 'updateEmplacement'])->middleware('permission:modifier_emplacement');
+Route::delete('/emplacements/{id}', [EmplacementController::class, 'supprimerEmplacement'])->middleware('permission:supprimer_emplacement');
 Route::get('/emplacement', [EmplacementController::class, 'getAllemplacement']);
+});
 
 
 
@@ -436,14 +440,17 @@ Route::post('/search-note/{id}', [NotePerceptionController::class, 'searchnote_i
 
 
 
-//article budgetaire
+//article budgetaire 
+Route::middleware('auth:sanctum')->group(function () {
 Route::get('/article', [ArticleBudgetaireController::class, 'getArticle']); // Liste paginée
 Route::get('/articleall', [ArticleBudgetaireController::class, 'getArticleAll']); // Liste paginée
 Route::post('/search-article', [ArticleBudgetaireController::class, 'searchArticle']); // Recherche
-Route::post('/create-article', [ArticleBudgetaireController::class, 'creerArticle']); // Création
+Route::post('/create-article', [ArticleBudgetaireController::class, 'creerArticle'])->middleware('permission:creer_service_assiette');  // Création
 Route::get('/edit-article/{id}', [ArticleBudgetaireController::class, 'editArticle']); // Lecture d’un article
-Route::put('/update-article/{id}', [ArticleBudgetaireController::class, 'updateArticle']); // Mise à jour
-Route::delete('delete-article/{id}', [ArticleBudgetaireController::class, 'deleteArticle']); // Désactivation
+Route::put('/update-article/{id}', [ArticleBudgetaireController::class, 'updateArticle'])->middleware('permission:modifier_service_assiette');  // Mise à jour
+Route::delete('delete-article/{id}', [ArticleBudgetaireController::class, 'deleteArticle'])->middleware('permission:supprimer_service_assiette'); // Désactivation
+
+});
 
 
 

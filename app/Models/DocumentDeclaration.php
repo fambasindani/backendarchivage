@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class DocumentDeclaration extends Model
 {
     use HasFactory;
-     protected $fillable = ['id_declaration',   'id_classeur', 'nom_fichier', 'nom_native'];
+     protected $fillable = ['id_declaration',   'id_classeur', 'nom_fichier', 'nom_native','taille'];
 
 
 }

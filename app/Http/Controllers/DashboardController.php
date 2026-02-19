@@ -297,66 +297,90 @@ public function Searchdeclarationx(Request $request)
     /**
      * 📁 TOUS LES CLASSIFICATEURS AVEC COMPTAGE OPTIMISÉ
      */
-    public function classifiers(Request $request)
-    {
-        $query = Classeur::query();
-        
-        // Filtre par recherche
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('nom_classeur', 'like', '%' . $request->search . '%');
-        }
-        
-        // Pagination
-        $perPage = $request->get('per_page', 12);
-        
-        $classificateurs = $query->withCount(['declarations as total' => function($q) use ($request) {
-            // Filtre par direction si spécifié
-            if ($request->has('id_direction') && !empty($request->id_direction)) {
-                $q->where('id_direction', $request->id_direction);
-            }
-            
-            // Filtre par période
-            if ($request->has('periode')) {
-                switch($request->periode) {
-                    case 'today':
-                        $q->whereDate('created_at', Carbon::today());
-                        break;
-                    case 'week':
-                        $q->whereBetween('created_at', [
-                            Carbon::now()->startOfWeek(),
-                            Carbon::now()->endOfWeek()
-                        ]);
-                        break;
-                    case 'month':
-                        $q->whereMonth('created_at', Carbon::now()->month)
-                          ->whereYear('created_at', Carbon::now()->year);
-                        break;
-                    case 'year':
-                        $q->whereYear('created_at', Carbon::now()->year);
-                        break;
-                }
-            }
-        }])
-        ->orderBy('total', 'desc')
-        ->paginate($perPage);
-        
-        // Ajouter la date du dernier document
-        foreach ($classificateurs as $classeur) {
-            $dernier = Declaration::where('id_classeur', $classeur->id)
-                ->orderBy('created_at', 'desc')
-                ->first();
-            
-            $classeur->dernier_document = $dernier ? $dernier->created_at : null;
-            
-            // Ajouter le total réel (déjà dans withCount)
-            $classeur->total = $classeur->total ?? 0;
-        }
-        
-        return response()->json([
-            'success' => true,
-            'data' => $classificateurs
-        ]);
+ public function classifiers(Request $request)
+{
+    $query = Classeur::query();
+    
+    // Filtre par recherche
+    if ($request->has('search') && !empty($request->search)) {
+        $query->where('nom_classeur', 'like', '%' . $request->search . '%');
     }
+    
+    // Filtre par direction si spécifié
+    if ($request->has('id_direction') && !empty($request->id_direction)) {
+        $query->whereHas('declarations', function($q) use ($request) {
+            $q->where('id_direction', $request->id_direction);
+        });
+    }
+    
+    // Pagination
+    $perPage = $request->get('per_page', 12);
+    
+    $classificateurs = $query->withCount(['declarations as total' => function($q) use ($request) {
+        // Filtre par direction si spécifié
+        if ($request->has('id_direction') && !empty($request->id_direction)) {
+            $q->where('id_direction', $request->id_direction);
+        }
+        
+        // Filtre par période
+        if ($request->has('periode')) {
+            switch($request->periode) {
+                case 'today':
+                    $q->whereDate('created_at', Carbon::today());
+                    break;
+                case 'week':
+                    $q->whereBetween('created_at', [
+                        Carbon::now()->startOfWeek(),
+                        Carbon::now()->endOfWeek()
+                    ]);
+                    break;
+                case 'month':
+                    $q->whereMonth('created_at', Carbon::now()->month)
+                      ->whereYear('created_at', Carbon::now()->year);
+                    break;
+                case 'year':
+                    $q->whereYear('created_at', Carbon::now()->year);
+                    break;
+            }
+        }
+    }])
+    ->with(['declarations.departement']) // Charger les départements via les déclarations
+    ->orderBy('total', 'desc')
+    ->paginate($perPage);
+    
+    // Ajouter les informations supplémentaires
+    foreach ($classificateurs as $classeur) {
+        // Date du dernier document
+        $dernier = Declaration::where('id_classeur', $classeur->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        $classeur->dernier_document = $dernier ? $dernier->created_at : null;
+        
+        // Total réel
+        $classeur->total = $classeur->total ?? 0;
+        
+        // ✅ AJOUT: Récupérer les directions/départements associés à ce classeur
+        $directions = Declaration::where('id_classeur', $classeur->id)
+            ->with('departement')
+            ->select('id_direction')
+            ->distinct()
+            ->get()
+            ->pluck('departement')
+            ->filter();
+        
+        $classeur->directions = $directions->values();
+        $classeur->directions_count = $directions->count();
+        
+        // ✅ AJOUT: Récupérer les noms des directions pour l'affichage
+        $classeur->directions_noms = $directions->pluck('nom')->implode(', ');
+    }
+    
+    return response()->json([
+        'success' => true,
+        'data' => $classificateurs
+    ]);
+}
 
     /**
      * 📁 CLASSIFICATEURS PAR DIRECTION

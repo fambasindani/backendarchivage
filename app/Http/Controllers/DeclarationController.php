@@ -19,32 +19,51 @@ public function editdeclaration($id)
     }
 
 
-public function getlistedocument($id)
+public function getlistedocument(Request $request, $id)
 {
-    $declarations = Declaration::with(['direction', 'emplacement', 'classeur'])
+    // Récupérer les IDs des directions depuis la requête
+    $directionIds = $request->input('direction_ids');
+    
+    $query = Declaration::with(['departement', 'emplacement', 'classeur'])
         ->where('statut', 1)
-        ->where('id_classeur', $id) // Ajout de la condition where pour filtrer par id
-        ->orderBy('id', 'desc')
-        ->paginate(20);
+        ->where('id_classeur', $id);
+    
+    // Si des directions sont spécifiées, filtrer par ces directions
+    if ($directionIds) {
+        $ids = explode(',', $directionIds);
+        $query->whereIn('id_direction', $ids);
+    }
+    
+    $declarations = $query->orderBy('id', 'desc')->paginate(20);
 
     $declarations->getCollection()->transform(function ($item) {
-        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_direction = $item->departement->nom ?? null;
         $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
         return $item;
     });
 
-
-
-
     return response()->json($declarations);
 }
 
-public function searchDeclarationsfiltre(Request $request, $id)
+
+
+
+    
+
+public function searchDeclarationsfiltrexxx(Request $request, $id)
 {
     $search = $request->input('search');
-    $page = $request->input('page', 1); // par défaut page 1
+    $page = $request->input('page', 1);
+    
+    // 🔥 Récupérer les IDs des directions depuis la requête
+    $directionIds = $request->input('direction_ids');
+    
+    \Log::info('=== searchDeclarationsfiltre appelé ===');
+    \Log::info('ID Classeur: ' . $id);
+    \Log::info('Search: ' . $search);
+    \Log::info('Direction IDs reçus: ' . ($directionIds ?? 'aucun'));
 
-    $query = Declaration::with(['direction', 'emplacement', 'classeur'])
+    $query = Declaration::with(['departement', 'emplacement', 'classeur'])
         ->where('statut', 1)
         ->where('id_classeur', $id)
         ->where(function ($q) use ($search) {
@@ -53,17 +72,135 @@ public function searchDeclarationsfiltre(Request $request, $id)
               ->orWhere('mot_cle', 'like', "%$search%")
               ->orWhere('num_declaration', 'like', "%$search%");
         });
+    
+    // 🔥 APPLIQUER LE FILTRE PAR DIRECTIONS
+    if ($directionIds && !empty($directionIds)) {
+        if (is_string($directionIds)) {
+            $directionIds = explode(',', $directionIds);
+        }
+        $directionIds = array_map('intval', $directionIds);
+        $query->whereIn('id_direction', $directionIds);
+        
+        \Log::info('Filtrage par directions: ' . implode(', ', $directionIds));
+    } else {
+        // 🔥 Si aucun direction_ids, ne rien retourner (utilisateur sans direction)
+        \Log::info('Aucune direction - retour tableau vide');
+        return response()->json([
+            'data' => [],
+            'current_page' => 1,
+            'last_page' => 1,
+            'total' => 0,
+            'per_page' => 20
+        ]);
+    }
 
     $declarations = $query->orderBy('id', 'desc')->paginate(20, ['*'], 'page', $page);
 
     $declarations->getCollection()->transform(function ($item) {
-        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_direction = $item->departement->nom ?? null;
         $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        unset($item->departement);
+        unset($item->emplacement);
         return $item;
     });
 
+    \Log::info('Nombre de documents retournés: ' . $declarations->total());
+
     return response()->json($declarations);
 }
+
+
+public function searchDeclarationsfiltre(Request $request)
+{
+    $search = $request->input('search');
+    $page = $request->input('page', 1);
+    
+    // 🔥 Récupérer les IDs des directions depuis la requête
+    $directionIds = $request->input('direction_ids');
+    
+    \Log::info('=== searchDeclarations (globale) appelé ===');
+    \Log::info('Search: ' . $search);
+    \Log::info('Direction IDs reçus: ' . ($directionIds ?? 'aucun'));
+
+    // 🔥 Vérifier si des direction_ids sont fournis
+    if (!$directionIds || empty($directionIds)) {
+        \Log::info('Aucune direction - retour tableau vide');
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'total' => 0,
+                'per_page' => 20
+            ],
+            'filtered_by' => 'none'
+        ]);
+    }
+
+    // Convertir les IDs en tableau d'entiers
+    if (is_string($directionIds)) {
+        $directionIds = explode(',', $directionIds);
+    }
+    $directionIds = array_map('intval', $directionIds);
+    
+    // Filtrer les IDs invalides
+    $directionIds = array_filter($directionIds, function($id) {
+        return $id > 0;
+    });
+
+    if (empty($directionIds)) {
+        \Log::info('Aucun ID valide - retour tableau vide');
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'total' => 0,
+                'per_page' => 20
+            ],
+            'filtered_by' => 'none'
+        ]);
+    }
+
+    \Log::info('IDs après conversion: ' . implode(', ', $directionIds));
+
+    // 🔥 REQUÊTE SANS where('id_classeur', $id)
+    $query = Declaration::with(['departement', 'emplacement', 'classeur'])
+        ->where('statut', 1)
+        ->whereIn('id_direction', $directionIds)
+        ->where(function ($q) use ($search) {
+            $q->where('intitule', 'like', "%$search%")
+              ->orWhere('num_reference', 'like', "%$search%")
+              ->orWhere('mot_cle', 'like', "%$search%")
+              ->orWhere('num_declaration', 'like', "%$search%");
+        });
+
+    \Log::info('Filtrage par directions: ' . implode(', ', $directionIds));
+
+    // Paginer les résultats
+    $declarations = $query->orderBy('id', 'desc')->paginate(20, ['*'], 'page', $page);
+
+    // Transformer les données
+    $declarations->getCollection()->transform(function ($item) {
+        $item->nom_direction = $item->departement->nom ?? null;
+        $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        unset($item->departement);
+        unset($item->emplacement);
+        return $item;
+    });
+
+    \Log::info('Nombre de documents retournés: ' . $declarations->total());
+
+    return response()->json([
+        'success' => true,
+        'data' => $declarations,
+        'filtered_by' => $directionIds
+    ]);
+}
+
+
 
 
 public function listedocumentdirectionall(Request $request, $id)
@@ -71,7 +208,7 @@ public function listedocumentdirectionall(Request $request, $id)
     //$id = $request->input('id_classeur');
     $id_direction = $request->input('id_direction');
 
-    $declarations = Declaration::with(['direction', 'emplacement', 'classeur'])
+    $declarations = Declaration::with(['departement', 'emplacement', 'classeur'])
         ->where('statut', 1)
         ->where('id_classeur', $id)
         ->where('id_direction', $id_direction)
@@ -93,21 +230,88 @@ public function listedocumentdirectionall(Request $request, $id)
 
 
 
-public function getDeclarations()
+public function getDeclarationsttt()
 {
-    $declarations = Declaration::with(['direction', 'emplacement', 'classeur'])
+    $declarations = Declaration::with(['departement', 'emplacement', 'classeur'])
         ->where('statut', 1)
         ->orderBy('id', 'desc')
         ->paginate(20);
 
     $declarations->getCollection()->transform(function ($item) {
-        $item->nom_direction = $item->direction->nom ?? null;
+        $item->nom_direction = $item->departement->nom ?? null;
         $item->nom_emplacement = $item->emplacement->nom_emplacement?? null;
         return $item;
     });
 
     return response()->json($declarations);
 }
+
+
+public function getDeclarations(Request $request)
+{
+    // Récupérer les IDs des directions depuis la requête
+    $directionIds = $request->input('direction_ids');
+    
+    \Log::info('=== getDeclarations appelé ===');
+    \Log::info('Direction IDs reçus: ' . ($directionIds ?? 'aucun'));
+    
+    // Construire la requête de base
+    $query = Declaration::with(['departement', 'emplacement', 'classeur'])
+        ->where('statut', 1)
+        ->orderBy('id', 'desc');
+    
+    // 🔥 Vérifier d'abord les IDs des documents avant filtrage
+    $avantFiltrage = $query->get()->pluck('id_direction')->unique();
+    \Log::info('IDs des directions AVANT filtrage: ' . json_encode($avantFiltrage));
+    
+    // Appliquer le filtre si des IDs de directions sont fournis
+    if ($directionIds && !empty($directionIds)) {
+        if (is_string($directionIds)) {
+            $directionIds = explode(',', $directionIds);
+        }
+        
+        $directionIds = array_map('intval', $directionIds);
+        \Log::info('IDs après conversion: ' . json_encode($directionIds));
+        
+        // 🔥 FILTRAGE STRICT
+        $query->whereIn('id_direction', $directionIds);
+        
+        // Vérifier la requête SQL
+        \Log::info('SQL: ' . $query->toSql());
+        \Log::info('Bindings: ' . json_encode($query->getBindings()));
+    } else {
+        \Log::info('Aucun filtre appliqué - affichage de tous les documents');
+    }
+    
+    // Paginer les résultats
+    $perPage = $request->input('per_page', 20);
+    $declarations = $query->paginate($perPage);
+    
+    // 🔥 Vérifier les IDs après filtrage
+    $apresFiltrage = $declarations->pluck('id_direction')->unique();
+    \Log::info('IDs des directions APRÈS filtrage: ' . json_encode($apresFiltrage));
+    
+    // Transformer les données
+    $declarations->getCollection()->transform(function ($item) {
+        $item->nom_direction = $item->departement->nom ?? null;
+        $item->nom_emplacement = $item->emplacement->nom_emplacement ?? null;
+        
+        unset($item->departement);
+        unset($item->emplacement);
+        
+        return $item;
+    });
+
+    \Log::info('Nombre de documents retournés: ' . $declarations->total());
+    \Log::info('=== Fin getDeclarations ===');
+
+    return response()->json([
+        'success' => true,
+        'data' => $declarations,
+        'filtered_by' => $directionIds ?? 'all'
+    ]);
+}
+
 
 
 public function searchDeclarations(Request $request)

@@ -12,6 +12,7 @@ class NotePerceptionController extends Controller
     {
         return NotePerception::with(['classeur', 'centre', 'assujetti', 'emplacement', 'utilisateur', 'ArticleBudgetaire'])
                              ->where('statut', 1)
+                              ->orderBy('id', 'desc')
                              ->paginate(10);
     }
 

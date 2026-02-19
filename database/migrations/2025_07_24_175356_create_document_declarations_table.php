@@ -15,10 +15,12 @@ class CreateDocumentDeclarationsTable extends Migration
     {
         Schema::create('document_declarations', function (Blueprint $table) {
              $table->id();
-            $table->integer('id_classeur');
-            $table->integer('id_declaration');
+             $table->integer('id_classeur');
+             $table->integer('id_declaration');
              $table->string('nom_fichier');      // nom généré
              $table->string('nom_native');       // nom original
+             $table->decimal('taille', 10, 2); // ex: 2.35 Mo    // nom original
+             
              $table->timestamps();
         });
     }

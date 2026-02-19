@@ -40,7 +40,7 @@ public function deleteDocument($id)
 
 
     // 📤 Upload multiple PDF dans dossier par id_classeur + 100
-    public function uploadMultiple(Request $request)
+    public function uploadMultiplex(Request $request)
     {
         $request->validate([
             'files' => 'required|array',
@@ -73,6 +73,45 @@ public function deleteDocument($id)
         ], 201);
     }
 
+
+// 📤 Upload multiple PDF dans dossier par id_classeur + 100
+public function uploadMultiple(Request $request)
+{
+    $request->validate([
+        'files'           => 'required|array',
+        'files.*'         => 'file|mimes:pdf|max:51200', // max 50 Mo
+        'id_declaration'  => 'required|integer',
+        'id_classeur'     => 'required|integer',
+    ]);
+
+    $documents = [];
+
+    foreach ($request->file('files') as $file) {
+
+        $nomFichier = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $dossier = "document_declaration/" . ($request->id_classeur + 100);
+
+        // 📁 stockage dans le dossier spécifique (ta logique conservée)
+        $file->storeAs($dossier, $nomFichier);
+
+        // 📏 taille du fichier en bytes
+        $taille = $file->getSize();
+
+        // 💾 enregistrement DB (on ajoute seulement 'taille')
+        $documents[] = DocumentDeclaration::create([
+            'id_declaration' => $request->id_declaration,
+            'id_classeur'    => $request->id_classeur,
+            'nom_fichier'    => $nomFichier,
+            'nom_native'     => $file->getClientOriginalName(),
+            'taille'         => $taille, // ✅ AJOUT ICI
+        ]);
+    }
+
+    return response()->json([
+        'message'   => 'Fichiers PDF uploadés avec succès ✅',
+        'documents' => $documents
+    ], 201);
+}
 
 
     
