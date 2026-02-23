@@ -24,6 +24,65 @@ use App\Http\Controllers\DepartementController;
 
 use App\Http\Controllers\DashboardNoteController;
 use App\Http\Controllers\ScanController;
+use App\Http\Controllers\PublicStatsController;
+
+
+//172.25.20.110
+//php artisan serve --host=172.25.20.110 --port=8000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================
+// 3. STATISTIQUES PUBLIQUES POUR HOMESCREEN
+// ============================================
+Route::prefix('public')->group(function () {
+    // Statistiques globales (pour les 4 cartes)
+    Route::get('/stats', [PublicStatsController::class, 'getHomeStats']);
+    
+    // Détails module Archivage Ordinaire (AD)
+    Route::get('/module/ad/stats', [PublicStatsController::class, 'getAdStats']);
+    
+    // Détails module Notes de Perception (NP)
+    Route::get('/module/np/stats', [PublicStatsController::class, 'getNpStats']);
+    
+    // Informations sur les modules (pour ModuleCard)
+    Route::get('/modules', [PublicStatsController::class, 'getModulesInfo']);
+    
+    // Activités récentes (limité)
+    Route::get('/recent-activity', [PublicStatsController::class, 'getRecentActivity']);
+    
+    // Santé du système
+    Route::get('/health', [PublicStatsController::class, 'getSystemHealth']);
+});
+
+
+// ============================================
+// 4. TEST (PUBLIQUE)
+// ============================================
+Route::get('/ping', function () {
+    return response()->json([
+        'message' => 'pong',
+        'timestamp' => now(),
+        'status' => 'API is running'
+    ]);
+});
+
+
+
 
 
 

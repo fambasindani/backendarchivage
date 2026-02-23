@@ -100,102 +100,127 @@ class ProfilController extends Controller
     /**
      * Modifier le profil d'un utilisateur
      */
-    public function modifierProfil(Request $request, $id)
-    {
+  public function modifierProfil(Request $request, $id)
+{
+    $user = MonUtilisateur::find($id);
+    
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Utilisateur non trouvé'
+        ], 404);
+    }
+
+    // ✅ Validation avec ancien mot de passe obligatoire si nouveau mot de passe fourni
+    $rules = [
+        'nom' => 'sometimes|string|max:50',
+        'prenom' => 'sometimes|string|max:50',
+        'email' => 'sometimes|email|unique:monutilisateurs,email,' . $id,
+        'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
+    ];
+
+    // 🔐 Si un nouveau mot de passe est fourni, l'ancien devient obligatoire
+    if ($request->filled('password')) {
+        $rules['current_password'] = 'required|string';
+        $rules['password'] = 'required|string|min:6|confirmed';
+    }
+
+    $validator = Validator::make($request->all(), $rules);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        // 🔐 VÉRIFICATION DE L'ANCIEN MOT DE PASSE
+        if ($request->filled('password')) {
+            // Récupérer le mot de passe actuel de l'utilisateur
+            $currentPassword = $user->password;
+            
+            // Vérifier si l'ancien mot de passe correspond
+            if (!Hash::check($request->current_password, $currentPassword)) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => [
+                        'current_password' => ['L\'ancien mot de passe est incorrect']
+                    ]
+                ], 401); // 401 Unauthorized
+            }
+        }
+
+        // 🔹 Données à mettre à jour
+        $updateData = [];
+
+        if ($request->has('nom')) {
+            $updateData['nom'] = $request->nom;
+        }
+        if ($request->has('prenom')) {
+            $updateData['prenom'] = $request->prenom;
+        }
+        if ($request->has('email')) {
+            $updateData['email'] = $request->email;
+        }
+        
+        // 🔐 Mise à jour du mot de passe uniquement si fourni ET après vérification
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        // 🔥 GESTION DE L'IMAGE - DOSSIER app/avatar
+        if ($request->hasFile('avatar')) {
+            // Supprimer l'ancienne image
+            if ($user->avatar) {
+                Storage::disk('local')->delete('avatar/' . $user->avatar);
+            }
+            
+            // Générer un nom unique avec le format: id_timestamp.extension
+            $file = $request->file('avatar');
+            $extension = $file->getClientOriginalExtension();
+            $filename = $id . '_' . time() . '.' . $extension;
+            
+            // Stocker dans app/avatar
+            $file->storeAs('avatar', $filename, 'local');
+            
+            // Sauvegarder le nom dans la BD
+            $updateData['avatar'] = $filename;
+        }
+
+        // Mise à jour
+        $user->update($updateData);
+        
+        // 🔥 Recharger l'utilisateur
         $user = MonUtilisateur::find($id);
         
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Utilisateur non trouvé'
-            ], 404);
-        }
+        // 🔥 URL complète avec le prefix profil
+        $user->avatar_url = $user->avatar 
+            ? url('profil/avatar/' . $user->avatar)
+            : null;
 
-        // ✅ Validation
-        $validator = Validator::make($request->all(), [
-            'nom' => 'sometimes|string|max:50',
-            'prenom' => 'sometimes|string|max:50',
-            'email' => 'sometimes|email|unique:monutilisateurs,email,' . $id,
-            'password' => 'nullable|string|min:6',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
-        ]);
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $user->id,
+                'nom' => $user->nom,
+                'prenom' => $user->prenom,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'avatar_url' => $user->avatar_url,
+                'statut' => $user->statut,
+                'updated_at' => $user->updated_at
+            ],
+            'message' => 'Profil mis à jour avec succès'
+        ], 200);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            // 🔹 Données à mettre à jour
-            $updateData = [];
-
-            if ($request->has('nom')) {
-                $updateData['nom'] = $request->nom;
-            }
-            if ($request->has('prenom')) {
-                $updateData['prenom'] = $request->prenom;
-            }
-            if ($request->has('email')) {
-                $updateData['email'] = $request->email;
-            }
-            if ($request->filled('password')) {
-                $updateData['password'] = Hash::make($request->password);
-            }
-
-            // 🔥 GESTION DE L'IMAGE - DOSSIER app/avatar
-            if ($request->hasFile('avatar')) {
-                // Supprimer l'ancienne image
-                if ($user->avatar) {
-                    Storage::disk('local')->delete('avatar/' . $user->avatar);
-                }
-                
-                // Générer un nom unique avec le format: id_timestamp.extension
-                $file = $request->file('avatar');
-                $extension = $file->getClientOriginalExtension();
-                $filename = $id . '_' . time() . '.' . $extension;
-                
-                // Stocker dans app/avatar
-                $file->storeAs('avatar', $filename, 'local');
-                
-                // Sauvegarder le nom dans la BD
-                $updateData['avatar'] = $filename;
-            }
-
-            // Mise à jour
-            $user->update($updateData);
-            
-            // 🔥 Recharger l'utilisateur
-            $user = MonUtilisateur::find($id);
-            
-            // 🔥 URL complète avec le prefix profil
-            $user->avatar_url = $user->avatar 
-                ? url('profil/avatar/' . $user->avatar)
-                : null;
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $user->id,
-                    'nom' => $user->nom,
-                    'prenom' => $user->prenom,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar,
-                    'avatar_url' => $user->avatar_url,
-                    'statut' => $user->statut,
-                    'updated_at' => $user->updated_at
-                ],
-                'message' => 'Profil mis à jour avec succès'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur: ' . $e->getMessage()
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Afficher le profil d'un utilisateur avec toutes ses relations

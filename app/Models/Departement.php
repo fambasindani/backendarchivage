@@ -20,4 +20,9 @@ class Departement extends Model
     {
         return $this->belongsToMany(Monutilisateur::class, 'direction_user', 'direction_id', 'user_id');
     }
+
+       public function declarations()
+    {
+        return $this->hasMany(Declaration::class, 'id_direction');
+    }
 }
