@@ -17,10 +17,10 @@ class CreateDocumentDeclarationsTable extends Migration
              $table->id();
              $table->integer('id_classeur');
              $table->integer('id_declaration');
-             $table->string('nom_fichier');      // nom généré
+             $table->string('nom_fichier');      // nom généré  
              $table->string('nom_native');       // nom original
              $table->decimal('taille', 10, 2); // ex: 2.35 Mo    // nom original
-             
+             $table->text('montext')->nullable();
              $table->timestamps();
         });
     }

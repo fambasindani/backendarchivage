@@ -49,4 +49,11 @@ class NotePerception extends Model
     {
         return $this->belongsTo(ArticleBudgetaire::class, 'id_ministere');
     }
+
+    // app/Models/NotePerception.php
+
+public function documents()
+{
+    return $this->hasMany(DocumentDeclaration::class, 'id_declaration', 'id');
+}
 }

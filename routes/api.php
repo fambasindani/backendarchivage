@@ -365,6 +365,29 @@ Route::get('/documents/{id}', [DocumentDeclarationController::class, 'getallpdf'
 Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'deleteDocument']);
 
 
+// Upload multiple (sans OCR backend)
+//Route::post('/documents-declaration/upload-multiple', [DocumentDeclarationController::class, 'uploadMultiple']);
+
+// Mise à jour du texte OCR (appelé par le frontend)
+Route::put('/documents-declaration/{id}/update-text', [DocumentDeclarationController::class, 'updateOCRText']);
+
+// Récupérer le texte OCR
+Route::get('/documents-declaration/{id}/text', [DocumentDeclarationController::class, 'getDocumentText']);
+
+// Recherche avancée
+//Route::post('/documents-declaration/advanced-search', [DocumentDeclarationController::class, 'advancedSearch']);
+// routes/api.php
+Route::post('/documents-declaration/advanced-search/{id_direction}', [DocumentDeclarationController::class, 'advancedSearch']);
+
+// Statistiques OCR
+Route::get('/documents-declaration/ocr-stats', [DocumentDeclarationController::class, 'getOCRStats']);
+
+// Téléchargement
+//Route::get('/documents-declaration/download/{id}', [DocumentDeclarationController::class, 'download']);
+
+// Suppression
+Route::delete('/delete-document/{id}', [DocumentDeclarationController::class, 'destroy']);
+
 
 
 
@@ -495,6 +518,8 @@ Route::delete('/notes/{id}', [NotePerceptionController::class, 'deletenote']);
 Route::get('/noteid-searchnote/{id}', [NotePerceptionController::class, 'searchnote_idcentre']);
 Route::get('/note-centre/{id}', [NotePerceptionController::class, 'getNote_centre']);
 Route::post('/search-note/{id}', [NotePerceptionController::class, 'searchnote_id']);
+// Route pour la recherche avancée des notes de perception
+Route::post('/notes-perception/advanced-search', [NotePerceptionController::class, 'advancedSearch']);
 
 
 

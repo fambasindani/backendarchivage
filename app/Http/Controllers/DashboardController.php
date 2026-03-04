@@ -212,155 +212,140 @@ public function Searchdeclarationx(Request $request)
 
 
 
-    public function statistics()
-    {
-        // Statistiques globales
-        $total_documents = Declaration::count();
-        $total_classificateurs = Classeur::count();
-        $total_directions = Departement::count(); // Changé de Direction à Departement
-        
-        // Documents par statut
-        $documents_actifs = Declaration::where('statut', 'actif')->count();
-        $documents_archives = Declaration::where('statut', 'archivé')->count();
-        
-        // Documents aujourd'hui
-        $documents_aujourdhui = Declaration::whereDate('created_at', Carbon::today())->count();
-        
-        // Documents cette semaine
-        $documents_semaine = Declaration::whereBetween('created_at', [
-            Carbon::now()->startOfWeek(),
-            Carbon::now()->endOfWeek()
-        ])->count();
-        
-        // Documents ce mois
-        $documents_mois = Declaration::whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->count();
-        
-        // Top 5 classificateurs
-        $top_classificateurs = Declaration::select(
-                'id_classeur',
-                DB::raw('count(*) as total'),
-                DB::raw('MAX(created_at) as dernier_ajout')
-            )
-            ->with('classeur:id,nom_classeur,created_at')
-            ->groupBy('id_classeur')
-            ->orderBy('total', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id_classeur,
-                    'nom' => $item->classeur->nom_classeur ?? 'N/A',
-                    'total' => $item->total,
-                    'dernier_ajout' => $item->dernier_ajout,
-                    'created_at' => $item->classeur->created_at ?? null
-                ];
-            });
-        
-        // Top 5 départements (directions)
-        $top_directions = Declaration::select(
-                'id_direction',
-                DB::raw('count(*) as total')
-            )
-            ->with('departement:id,nom,sigle') // Changé de direction à departement
-            ->groupBy('id_direction')
-            ->orderBy('total', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id_direction,
-                    'nom' => $item->departement->nom ?? 'N/A', // Changé
-                    'sigle' => $item->departement->sigle ?? 'N/A', // Changé
-                    'total' => $item->total
-                ];
-            });
-        
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total_documents' => $total_documents,
-                'total_classificateurs' => $total_classificateurs,
-                'total_directions' => $total_directions,
-                'documents_actifs' => $documents_actifs,
-                'documents_archives' => $documents_archives,
-                'documents_aujourdhui' => $documents_aujourdhui,
-                'documents_semaine' => $documents_semaine,
-                'documents_mois' => $documents_mois,
-                'top_classificateurs' => $top_classificateurs,
-                'top_directions' => $top_directions
-            ]
-        ]);
-    }
+public function statistics()
+{
+    // Total des documents (déclarations)
+    $total_documents = Declaration::count();
+    
+    // ✅ Total des classeurs ayant au moins une déclaration (donc des documents)
+    $total_classificateurs = Classeur::whereHas('declarations')->count();
+    
+    // Total des directions (départements) - inchangé
+    $total_directions = Departement::count();
+    
+    // Documents par statut
+    $documents_actifs = Declaration::where('statut', 'actif')->count();
+    $documents_archives = Declaration::where('statut', 'archivé')->count();
+    
+    // Documents aujourd'hui
+    $documents_aujourdhui = Declaration::whereDate('created_at', Carbon::today())->count();
+    
+    // Documents cette semaine
+    $documents_semaine = Declaration::whereBetween('created_at', [
+        Carbon::now()->startOfWeek(),
+        Carbon::now()->endOfWeek()
+    ])->count();
+    
+    // Documents ce mois
+    $documents_mois = Declaration::whereMonth('created_at', Carbon::now()->month)
+        ->whereYear('created_at', Carbon::now()->year)
+        ->count();
+    
+    // Top 5 classificateurs (déjà basé sur les déclarations)
+    $top_classificateurs = Declaration::select(
+            'id_classeur',
+            DB::raw('count(*) as total'),
+            DB::raw('MAX(created_at) as dernier_ajout')
+        )
+        ->with('classeur:id,nom_classeur,created_at')
+        ->groupBy('id_classeur')
+        ->orderBy('total', 'desc')
+        ->limit(5)
+        ->get()
+        ->map(function($item) {
+            return [
+                'id' => $item->id_classeur,
+                'nom' => $item->classeur->nom_classeur ?? 'N/A',
+                'total' => $item->total,
+                'dernier_ajout' => $item->dernier_ajout,
+                'created_at' => $item->classeur->created_at ?? null
+            ];
+        });
+    
+    // Top 5 directions (déjà basé sur les déclarations)
+    $top_directions = Declaration::select(
+            'id_direction',
+            DB::raw('count(*) as total')
+        )
+        ->with('departement:id,nom,sigle')
+        ->groupBy('id_direction')
+        ->orderBy('total', 'desc')
+        ->limit(5)
+        ->get()
+        ->map(function($item) {
+            return [
+                'id' => $item->id_direction,
+                'nom' => $item->departement->nom ?? 'N/A',
+                'sigle' => $item->departement->sigle ?? 'N/A',
+                'total' => $item->total
+            ];
+        });
+    
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'total_documents' => $total_documents,
+            'total_classificateurs' => $total_classificateurs,
+            'total_directions' => $total_directions,
+            'documents_actifs' => $documents_actifs,
+            'documents_archives' => $documents_archives,
+            'documents_aujourdhui' => $documents_aujourdhui,
+            'documents_semaine' => $documents_semaine,
+            'documents_mois' => $documents_mois,
+            'top_classificateurs' => $top_classificateurs,
+            'top_directions' => $top_directions
+        ]
+    ]);
+}
 
-    /**
-     * 📁 TOUS LES CLASSIFICATEURS AVEC COMPTAGE OPTIMISÉ
-     */
- public function classifiers(Request $request)
+
+
+
+
+public function classifiers(Request $request)
 {
     $query = Classeur::query();
     
-    // Filtre par recherche
-    if ($request->has('search') && !empty($request->search)) {
+    // 🔒 Ne garder que les classeurs ayant au moins une déclaration (document)
+    $query->whereHas('declarations');
+    
+    // Filtre par recherche sur le nom du classeur
+    if ($request->filled('search')) {
         $query->where('nom_classeur', 'like', '%' . $request->search . '%');
     }
     
-    // Filtre par direction si spécifié
-    if ($request->has('id_direction') && !empty($request->id_direction)) {
+    // Filtre par direction
+    if ($request->filled('id_direction')) {
         $query->whereHas('declarations', function($q) use ($request) {
             $q->where('id_direction', $request->id_direction);
         });
     }
     
-    // Pagination
     $perPage = $request->get('per_page', 12);
     
     $classificateurs = $query->withCount(['declarations as total' => function($q) use ($request) {
-        // Filtre par direction si spécifié
-        if ($request->has('id_direction') && !empty($request->id_direction)) {
+        if ($request->filled('id_direction')) {
             $q->where('id_direction', $request->id_direction);
         }
-        
-        // Filtre par période
-        if ($request->has('periode')) {
-            switch($request->periode) {
-                case 'today':
-                    $q->whereDate('created_at', Carbon::today());
-                    break;
-                case 'week':
-                    $q->whereBetween('created_at', [
-                        Carbon::now()->startOfWeek(),
-                        Carbon::now()->endOfWeek()
-                    ]);
-                    break;
-                case 'month':
-                    $q->whereMonth('created_at', Carbon::now()->month)
-                      ->whereYear('created_at', Carbon::now()->year);
-                    break;
-                case 'year':
-                    $q->whereYear('created_at', Carbon::now()->year);
-                    break;
-            }
-        }
+        $this->applyPeriodFilter($q, $request->periode);
     }])
-    ->with(['declarations.departement']) // Charger les départements via les déclarations
+    ->with(['declarations.departement'])
     ->orderBy('total', 'desc')
     ->paginate($perPage);
     
-    // Ajouter les informations supplémentaires
     foreach ($classificateurs as $classeur) {
-        // Date du dernier document
-        $dernier = Declaration::where('id_classeur', $classeur->id)
-            ->orderBy('created_at', 'desc')
-            ->first();
+        // Dernier document avec les mêmes filtres
+        $dernierQuery = Declaration::where('id_classeur', $classeur->id);
+        if ($request->filled('id_direction')) {
+            $dernierQuery->where('id_direction', $request->id_direction);
+        }
+        $this->applyPeriodFilter($dernierQuery, $request->periode);
         
-        $classeur->dernier_document = $dernier ? $dernier->created_at : null;
-        
-        // Total réel
+        $dernier = $dernierQuery->orderBy('created_at', 'desc')->first();
+        $classeur->dernier_document = $dernier ? $dernier->created_at->toIso8601String() : null;
         $classeur->total = $classeur->total ?? 0;
         
-        // ✅ AJOUT: Récupérer les directions/départements associés à ce classeur
+        // Directions associées (sans filtre)
         $directions = Declaration::where('id_classeur', $classeur->id)
             ->with('departement')
             ->select('id_direction')
@@ -371,8 +356,6 @@ public function Searchdeclarationx(Request $request)
         
         $classeur->directions = $directions->values();
         $classeur->directions_count = $directions->count();
-        
-        // ✅ AJOUT: Récupérer les noms des directions pour l'affichage
         $classeur->directions_noms = $directions->pluck('nom')->implode(', ');
     }
     
@@ -381,6 +364,62 @@ public function Searchdeclarationx(Request $request)
         'data' => $classificateurs
     ]);
 }
+
+
+private function applyPeriodFilter($query, $periode)
+{
+    if (empty($periode) || $periode === 'all') {
+        return;
+    }
+
+    switch ($periode) {
+        case 'today':
+            $query->whereDate('created_at', Carbon::today());
+            break;
+        case 'week':
+            $query->whereBetween('created_at', [
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->endOfWeek()
+            ]);
+            break;
+        case 'month':
+            $query->whereMonth('created_at', Carbon::now()->month)
+                  ->whereYear('created_at', Carbon::now()->year);
+            break;
+        case 'year':
+            $query->whereYear('created_at', Carbon::now()->year);
+            break;
+    }
+}
+
+
+
+
+
+
+// private function applyPeriodFilter($query, $periode)
+// {
+//     if (empty($periode) || $periode === 'all') return;
+    
+//     switch ($periode) {
+//         case 'today':
+//             $query->whereDate('created_at', Carbon::today());
+//             break;
+//         case 'week':
+//             $query->whereBetween('created_at', [
+//                 Carbon::now()->startOfWeek(),
+//                 Carbon::now()->endOfWeek()
+//             ]);
+//             break;
+//         case 'month':
+//             $query->whereMonth('created_at', Carbon::now()->month)
+//                   ->whereYear('created_at', Carbon::now()->year);
+//             break;
+//         case 'year':
+//             $query->whereYear('created_at', Carbon::now()->year);
+//             break;
+//     }
+// }
 
     /**
      * 📁 CLASSIFICATEURS PAR DIRECTION
